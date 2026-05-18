@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Your Results - AI Career Navigator</title>
+    <meta name="description" content="Your personalized career recommendations.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="bg-blob-1"></div>
+    <div class="bg-blob-2"></div>
+
+    <nav>
+        <a href="/" class="logo">CareerAI.</a>
+        <div class="nav-links">
+            <a href="/">Home</a>
+            <a href="/recommend">Retake Assessment</a>
+        </div>
+    </nav>
+
+    <main class="container">
+        <div class="results-container">
+            <div class="results-header">
+                <h2>Your Top Matches</h2>
+                <p style="color: var(--text-secondary); font-size: 1.1rem;">Based on our AI analysis, here are the career paths that best align with your profile.</p>
+            </div>
+
+            <div class="cards-grid">
+                {% for career, percentage in recommendations %}
+                <div class="result-card" data-delay="{{ loop.index * 0.2 + 0.5 }}" style="opacity: 0;">
+                    <div class="card-rank">#{{ loop.index }}</div>
+                    <div class="career-title">{{ career }}</div>
+                    <div class="match-percentage">{{ percentage }}%</div>
+                    <div class="match-label">Match Score</div>
+                    
+                    <div class="progress-bar-container">
+                        <div class="progress-bar" data-width="{{ percentage }}" data-bar-delay="{{ loop.index * 0.2 + 0.8 }}"></div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+
+            <div class="results-actions" style="animation: fadeUp 1.5s ease-out forwards; opacity: 0;">
+                <a href="/recommend" class="btn btn-secondary">Recalculate Profile</a>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // Apply dynamic styles to avoid IDE CSS linting errors with Jinja syntax
+        document.querySelectorAll('.result-card').forEach(card => {
+            const delay = card.getAttribute('data-delay');
+            if (delay) {
+                card.style.animation = `fadeUp ${delay}s ease-out forwards`;
+            }
+        });
+
+        document.querySelectorAll('.progress-bar').forEach(bar => {
+            const width = bar.getAttribute('data-width');
+            const delay = bar.getAttribute('data-bar-delay');
+            if (width) {
+                bar.style.width = width + '%';
+            }
+            if (delay) {
+                bar.style.animationDelay = delay + 's';
+            }
+        });
+    </script>
+</body>
+</html>
