@@ -4,6 +4,7 @@ from werkzeug.security import generate_password_hash, check_password_hash
 
 import pickle
 import numpy as np
+import os
 
 # ================= INITIALIZE APP =================
 
@@ -13,7 +14,11 @@ app.secret_key = "career_secret_key"
 
 # ================= DATABASE CONFIG =================
 
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///users.db'
+BASE_DIR = os.path.abspath(os.path.dirname(__file__))
+
+app.config['SQLALCHEMY_DATABASE_URI'] = \
+    'sqlite:///' + os.path.join(BASE_DIR, 'users.db')
+
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db = SQLAlchemy(app)
@@ -35,7 +40,8 @@ class User(db.Model):
         nullable=False
     )
 
-# Create database
+# ================= CREATE DATABASE =================
+
 with app.app_context():
     db.create_all()
 
@@ -47,26 +53,51 @@ model = pickle.load(open("Models/model.pkl", "rb"))
 # ================= CAREER CLASSES =================
 
 class_names = [
-    'Lawyer', 'Doctor', 'Government Officer', 'Artist', 'Unknown',
-    'Software Engineer', 'Teacher', 'Business Owner', 'Scientist',
-    'Banker', 'Writer', 'Accountant', 'Designer',
-    'Construction Engineer', 'Game Developer', 'Stock Investor',
+    'Lawyer',
+    'Doctor',
+    'Government Officer',
+    'Artist',
+    'Unknown',
+    'Software Engineer',
+    'Teacher',
+    'Business Owner',
+    'Scientist',
+    'Banker',
+    'Writer',
+    'Accountant',
+    'Designer',
+    'Construction Engineer',
+    'Game Developer',
+    'Stock Investor',
     'Real Estate Developer'
 ]
 
 # ================= RECOMMENDATION FUNCTION =================
 
-def Recommendations(gender, part_time_job, absence_days, extracurricular_activities,
-                    weekly_self_study_hours, math_score, history_score, physics_score,
-                    chemistry_score, biology_score, english_score, geography_score,
-                    total_score, average_score):
+def Recommendations(
+        gender,
+        part_time_job,
+        absence_days,
+        extracurricular_activities,
+        weekly_self_study_hours,
+        math_score,
+        history_score,
+        physics_score,
+        chemistry_score,
+        biology_score,
+        english_score,
+        geography_score,
+        total_score,
+        average_score
+):
 
     gender_encoded = 1 if gender.lower() == 'female' else 0
+
     part_time_job_encoded = 1 if part_time_job else 0
+
     extracurricular_encoded = 1 if extracurricular_activities else 0
 
     features = np.array([[
-
         gender_encoded,
         part_time_job_encoded,
         absence_days,
@@ -81,7 +112,6 @@ def Recommendations(gender, part_time_job, absence_days, extracurricular_activit
         geography_score,
         total_score,
         average_score
-
     ]])
 
     scaled_features = scaler.transform(features)
@@ -97,7 +127,7 @@ def Recommendations(gender, part_time_job, absence_days, extracurricular_activit
 
     return results
 
-# ================= ROUTES =================
+# ================= HOME =================
 
 @app.route('/')
 def home():
@@ -110,25 +140,38 @@ def signup():
 
     if request.method == 'POST':
 
-        email = request.form['email']
-        password = request.form['password']
+        try:
 
-        existing_user = User.query.filter_by(email=email).first()
+            email = request.form['email']
+            password = request.form['password']
 
-        if existing_user:
-            return "User already exists!"
+            print("EMAIL:", email)
 
-        hashed_password = generate_password_hash(password)
+            existing_user = User.query.filter_by(email=email).first()
 
-        new_user = User(
-            email=email,
-            password=hashed_password
-        )
+            if existing_user:
+                return "User already exists!"
 
-        db.session.add(new_user)
-        db.session.commit()
+            hashed_password = generate_password_hash(password)
 
-        return redirect(url_for('login'))
+            new_user = User(
+                email=email,
+                password=hashed_password
+            )
+
+            db.session.add(new_user)
+
+            print("Saving user...")
+
+            db.session.commit()
+
+            print("User saved successfully")
+
+            return redirect(url_for('login'))
+
+        except Exception as e:
+
+            return f"Signup Error: {e}"
 
     return render_template('signup.html')
 
@@ -139,19 +182,30 @@ def login():
 
     if request.method == 'POST':
 
-        email = request.form['email']
-        password = request.form['password']
+        try:
 
-        user = User.query.filter_by(email=email).first()
+            email = request.form['email']
+            password = request.form['password']
 
-        if user and check_password_hash(user.password, password):
+            print("LOGIN EMAIL:", email)
 
-            session['user'] = user.email
+            user = User.query.filter_by(email=email).first()
 
-            return redirect(url_for('recommend'))
+            print("USER FOUND:", user)
 
-        else:
-            return "Invalid Email or Password"
+            if user and check_password_hash(user.password, password):
+
+                session['user'] = user.email
+
+                return redirect(url_for('recommend'))
+
+            else:
+
+                return "Invalid Email or Password"
+
+        except Exception as e:
+
+            return f"Login Error: {e}"
 
     return render_template('login.html')
 
@@ -206,7 +260,6 @@ def pred():
         average = float(request.form['average_score'])
 
         recommendations = Recommendations(
-
             gender,
             part_time_job,
             absence_days,
@@ -221,7 +274,6 @@ def pred():
             geography,
             total,
             average
-
         )
 
         return render_template(
@@ -230,7 +282,8 @@ def pred():
         )
 
     except Exception as e:
-        return f"Error: {e}"
+
+        return f"Prediction Error: {e}"
 
 # ================= RUN APP =================
 
